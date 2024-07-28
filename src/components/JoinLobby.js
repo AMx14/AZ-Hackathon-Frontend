@@ -1,14 +1,22 @@
-import React, { useState, useContext } from 'react';
-import { Grid, Paper, TextField, Button, Typography } from '@mui/material';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useContext, useEffect } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 import axios from 'axios';
 import { UserContext } from './UserContext';
+import { styled } from '@stitches/react';
+import { blackA, mauve, violet } from '@radix-ui/colors';
 
 const JoinLobby = () => {
-  const [lid, setLid] = useState('');
-  const { email } = useContext(UserContext); // Access email from UserContext
+  const { email } = useContext(UserContext);
   const [error, setError] = useState('');
+  const [lid, setLid] = useState('');
   const navigate = useNavigate();
+  const { lobbyId } = useParams();
+
+  useEffect(() => {
+    if (lobbyId) {
+      setLid(lobbyId);
+    }
+  }, [lobbyId]);
 
   const handleLidChange = (event) => setLid(event.target.value);
 
@@ -19,15 +27,14 @@ const JoinLobby = () => {
       return;
     }
     try {
-		const response = await axios.post('https://azhackathon-backend-1.onrender.com/lobbies/requestJoinLobby', {
-        lid,
-        participant: email,
-      }, {
-        headers: { 'Content-Type': 'application/json' },
-      });
+      const response = await axios.post(
+          'https://azhackathon-backend-1.onrender.com/lobbies/requestJoinLobby',
+          { lid, participant: email },
+          { headers: { 'Content-Type': 'application/json' } }
+      );
       if (response.status === 200) {
         alert(`You have joined lobby ${lid} with ${email}`);
-        navigate(`/startGame/${lid}`); // Redirect to StartGame component with lobby ID
+        navigate(`/startGame/${lid}`);
       } else {
         setError(response.data.message || 'Failed to send join request');
       }
@@ -36,121 +43,101 @@ const JoinLobby = () => {
     }
   };
 
-  const paperStyle = { padding: 20, height: '40vh', width: 400, margin: '50px auto' };
-  const btnStyle = { margin: '8px 0' };
-
   return (
-    <Grid container justifyContent="center" alignItems="center" style={{ minHeight: '100vh' }}>
-      <Paper elevation={10} style={paperStyle}>
-        <Typography variant="h5" align="center" gutterBottom>
-          Join Lobby
-        </Typography>
-        {error && <Typography color="error" align="center">{error}</Typography>}
-        <form onSubmit={handleJoinLobby}>
-          <TextField
-            label="Lobby ID"
-            placeholder="Enter lobby ID"
-            fullWidth
-            required
-            value={lid}
-            onChange={handleLidChange}
-            style={{ marginBottom: 16 }}
-          />
-          <TextField
-            label="Email"
-            placeholder="Enter participant email"
-            fullWidth
-            required
-            value={email}
-            disabled
-            style={{ marginBottom: 16 }}
-          />
-          <Button type="submit" color="primary" variant="contained" fullWidth style={btnStyle}>
-            Join Lobby
-          </Button>
-        </form>
-      </Paper>
-    </Grid>
+      <Container>
+        <Content>
+          <Title>Join Lobby</Title>
+          {error && <ErrorText>{error}</ErrorText>}
+          <form onSubmit={handleJoinLobby}>
+            <Fieldset>
+              <Label htmlFor="lobbyId">Lobby ID</Label>
+              <Input
+                  id="lobbyId"
+                  placeholder="Enter lobby ID"
+                  value={lid}
+                  onChange={handleLidChange}
+                  required
+              />
+            </Fieldset>
+            <Fieldset>
+              <Label htmlFor="email">Email</Label>
+              <Input id="email" value={email} readOnly />
+            </Fieldset>
+            <Button type="submit" variant="primary">
+              Join Lobby
+            </Button>
+          </form>
+        </Content>
+      </Container>
   );
 };
 
-export default JoinLobby;
-/*
-import React, { useState, useContext } from 'react';
-import { Grid, Paper, TextField, Button, Typography } from '@mui/material';
-import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
-import { UserContext } from './UserContext';
+const Container = styled('div', {
+  display: 'flex',
+  justifyContent: 'center',
+  alignItems: 'center',
+  height: '100vh',
+  backgroundColor: blackA.blackA9,
+});
 
-const JoinLobby = () => {
-  const [lid, setLid] = useState('');
-  const { email } = useContext(UserContext); // Access email from UserContext
-  const [error, setError] = useState('');
-  const navigate = useNavigate();
+const Content = styled('div', {
+  width: '100%',
+  maxWidth: '500px',
+  backgroundColor: 'black',
+  borderRadius: '12px',
+  padding: '40px',
+  boxShadow: '0 10px 38px -10px hsla(206, 22%, 7%, 0.35), 0 10px 20px -15px hsla(206, 22%, 7%, 0.2)',
+  textAlign: 'center',
+});
 
-  const handleLidChange = (event) => setLid(event.target.value);
+const Title = styled('h1', {
+  margin: '0 0 20px 0',
+  fontSize: '40px',
+  fontWeight: '500',
+  color: violet.violet11,
+});
 
-  const handleJoinLobby = async (event) => {
-    event.preventDefault();
-    if (!lid || !email) {
-      setError('Please provide all required fields.');
-      return;
-    }
-    try {
-      const response = await axios.post('http://localhost:8085/lobbies/requestJoinLobby', {
-        lid,
-        participant: email,
-      }, {
-        headers: { 'Content-Type': 'application/json' },
-      });
-      if (response.status === 200) {
-        alert(`You have joined lobby ${lid} with ${email}`);
-        navigate(`/startGame/${lid}`); // Redirect to StartGame component with lobby ID
-      } else {
-        setError(response.data.message || 'Failed to send join request');
-      }
-    } catch (error) {
-      setError(error.response?.data?.message || 'Failed to send join request');
-    }
-  };
+const ErrorText = styled('p', {
+  color: 'red',
+  marginBottom: '20px',
+});
 
-  const paperStyle = { padding: 20, height: '40vh', width: 400, margin: '50px auto' };
-  const btnStyle = { margin: '8px 0' };
+const Fieldset = styled('fieldset', {
+  all: 'unset',
+  display: 'flex',
+  flexDirection: 'column',
+  marginBottom: '20px',
+});
 
-  return (
-    <Grid container justifyContent="center" alignItems="center" style={{ minHeight: '100vh' }}>
-      <Paper elevation={10} style={paperStyle}>
-        <Typography variant="h5" align="center" gutterBottom>
-          Join Lobby
-        </Typography>
-        {error && <Typography color="error" align="center">{error}</Typography>}
-        <form onSubmit={handleJoinLobby}>
-          <TextField
-            label="Lobby ID"
-            placeholder="Enter lobby ID"
-            fullWidth
-            required
-            value={lid}
-            onChange={handleLidChange}
-            style={{ marginBottom: 16 }}
-          />
-          <TextField
-            label="Email"
-            placeholder="Enter participant email"
-            fullWidth
-            required
-            value={email}
-            disabled
-            style={{ marginBottom: 16 }}
-          />
-          <Button type="submit" color="primary" variant="contained" fullWidth style={btnStyle}>
-            Join Lobby
-          </Button>
-        </form>
-      </Paper>
-    </Grid>
-  );
-};
+const Label = styled('label', {
+  marginBottom: '8px',
+  fontSize: '16px',
+  fontWeight: '400',
+  color: mauve.mauve11,
+});
+
+const Input = styled('input', {
+  all: 'unset',
+  padding: '10px',
+  borderRadius: '6px',
+  backgroundColor: mauve.mauve1,
+  color: violet.violet11,
+  fontSize: '16px',
+  border: `1px solid ${violet.violet7}`,
+  '&:focus': { boxShadow: `0 0 0 2px ${violet.violet8}` },
+});
+
+const Button = styled('button', {
+  all: 'unset',
+  cursor: 'pointer',
+  padding: '10px 20px',
+  fontSize: '16px',
+  fontWeight: '500',
+  borderRadius: '6px',
+  backgroundColor: violet.violet9,
+  color: 'white',
+  transition: 'background-color 0.3s ease',
+  '&:hover': { backgroundColor: violet.violet11 },
+});
 
 export default JoinLobby;
-*/
